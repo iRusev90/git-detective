@@ -36,7 +36,7 @@ It starts from the latest commit going backwards and returns the commit hash of 
 I created a directory where the first commit added a file called "one.txt". The second "two.txt" and so on.
 
 ```
-infa-git-detective "ls" "three\.txt"
+git-detective "ls" "three\.txt"
 spawn git rev-parse --abbrev-ref HEAD
 master
 EXPECT: starting git-detective
@@ -64,7 +64,7 @@ Switched to branch 'master'
 EXPECT: ending git-detective
 ```
 
-In the example above we can see the script iterating over commits. It executes ls and checks if the output matches the regex "three\.txt"
+In the example above we can see the script iterating over commits. It executes ls and checks if the output matches the regex "three\\.txt"
 Once it finds a match it starts saying "EXPECT: hasFound match : true" however it keeps iterating as we are unsure if this is the oldest commit where we'll get the match.
 After it finds a commit with a match and later a commit with no match we know the origin of the match was the previous commit and it stops execution and informs us:
 "EXPECT: It's in 2e8e70bc3dcd2a207b080bc190cb49ab38e4437f"
