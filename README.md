@@ -8,8 +8,10 @@ It starts from the latest commit going backwards and returns the commit hash of 
 * expect 
 	* expect is an expect script interpreter
 	* installing through apt-get should work out of the box
+
 		```bash
 		sudo apt-get install expect
+		```
 
 # Usage
 * create an alias for the script in ~/.bashrc for easier usage (optional)
