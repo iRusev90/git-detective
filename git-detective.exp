@@ -1,0 +1,92 @@
+#!/usr/bin/expect -f
+
+proc debugLog { debugMessage } {
+	set message "EXPECT: $debugMessage"
+	puts $message
+}
+
+set argsLen [llength $argv]
+
+if {$argsLen != 2} {
+    debugLog "Program requires two arguments:"
+	debugLog "1) the command to execute on each version of the repository"
+	debugLog "2) the regex to match the output of the command against"
+	debugLog ""
+	debugLog "Ex:"
+	debugLog "git-detective \"ls\" \"file\.txt\""
+	debugLog "This command will find the first hash where the file appears"
+	exit
+}
+
+set command [lindex $argv 0]
+set command [string map {"\"" ""} $command]
+set wantedMatch [lindex $argv 1]
+set wantedMatch [string map {"\"" ""} $wantedMatch]
+
+spawn git rev-parse --abbrev-ref HEAD
+	expect {
+		default {
+			set initialBranch [string trim $expect_out(buffer)]
+		}
+	}
+ 
+
+set thisScriptDir  [file dirname $argv0]
+set shDir "$thisScriptDir/sh"
+
+
+
+set commitRegex {commit\s(.{40})};
+
+debugLog "starting git-detective"
+
+spawn bash $shDir/gitLogAndInform.sh 
+	expect {
+		"EXPECT: git log done" {
+		}
+	}
+
+set gitLog [read [open "$thisScriptDir/tmp/gitLog.txt"]]
+
+set gitLogLines [split $gitLog "\n"]
+
+set hashList {}
+foreach { line } $gitLogLines {
+	if {[regexp {commit\s(.{40})} $line -> commitHash]} {
+		lappend hashList $commitHash
+	}
+}
+
+set hasFoundMatch "false"
+foreach { hash} $hashList {
+	spawn git checkout $hash
+	debugLog "currently iterating over: $hash"
+	debugLog "hasFoundMatch : $hasFoundMatch"
+	spawn bash $shDir/commandWrapper.sh $command 
+			expect {
+				timeout {
+					debugLog "Running..."
+					exp_continue
+				}
+				-re "$wantedMatch" {
+					set result $hash
+					set hasFoundMatch "true"
+				} 
+				default {
+					if { $hasFoundMatch == "true" } {
+						break
+					}
+				}
+		}
+}
+
+if { [info exists result] } {
+	debugLog "It's in $result"
+} else {
+	debugLog "could not find"
+}
+
+spawn git checkout $initialBranch
+	expect
+
+debugLog "ending git-detective"
